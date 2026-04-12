@@ -16,6 +16,7 @@ class MapParser:
 		return fileName + getWBSaveExtension()
 		
 	def read(self, fileName):
+		self.lPlotDescs = []
 		fileName = os.path.normpath(fileName)
 		fileName, ext = os.path.splitext(fileName)
 		

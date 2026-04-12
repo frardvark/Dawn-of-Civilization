@@ -5,6 +5,16 @@ from Scenarios import *
 
 import Rise, RegionMap
 
+# Map script may call hooks before getGridSize in some paths; prepareMap() can also
+# abort before assignment if PARSER parse fails — never leave PARSER undefined.
+PARSER = None
+
+
+def _ensure_parser():
+	global PARSER
+	if PARSER is None:
+		prepareMap()
+
 
 lStartingDates = [
 	"3000 BC",
@@ -73,23 +83,39 @@ def getGridSize(args):
 	
 	prepareMap()
 	
-	return PARSER.mapDesc.iGridW/4, PARSER.mapDesc.iGridH/4
+	w = int(PARSER.mapDesc.iGridW)
+	h = int(PARSER.mapDesc.iGridH)
+	if w <= 0 or h <= 0:
+		raise RuntimeError(
+			"DoC getGridSize: invalid WB grid %sx%s (base map failed to load or PrivateMaps missing). "
+			"Ensure PrivateMaps/RFC_Earth.txt exists under the mod root (same folder as Assets)."
+			% (w, h)
+		)
+	# Terrain cell counts for CvMap (RFC_Earth uses plot counts divisible by 4).
+	cw = max(1, w // 4)
+	ch = max(1, h // 4)
+	return cw, ch
 
 def beforeGeneration():
+	_ensure_parser()
 	data.setup()
 	PARSER.prepare()
 
 def generateRandomMap():
+	_ensure_parser()
 	PARSER.applyPlotTypes()
 	PARSER.applyTerrainTypes()
 
 def addFeatures():
+	_ensure_parser()
 	PARSER.applyFeatures()
 
 def addBonuses():
+	_ensure_parser()
 	PARSER.applyBonuses()
 
 def addRivers():
+	_ensure_parser()
 	PARSER.applyRivers()
 
 def addGoodies():
@@ -100,6 +126,7 @@ def initRiseAndFall():
 	RegionMap.init()
 	
 def afterGeneration():
+	_ensure_parser()
 	initRiseAndFall()
 	scenario.init()
 	PARSER.applyDevelopment()

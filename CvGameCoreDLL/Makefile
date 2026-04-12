@@ -17,6 +17,8 @@
 ## Not touching the makefile itself can be beneficial if the makefile is committed to svn/git
 ## Makefile.settings can also accept CUSTOM_CFLAGS and CUSTOM_LDFLAGS if you want to ADD additional flags
 ##   the custom flags will not overwrite any flags the makefile sets itself
+##   CUSTOM_LDFLAGS is appended after all .obj and $(LIBS) (and an extra kernel32.lib). Putting psapi.lib
+##   there is OK; system libs also belong in GLOBAL_LIBS (kernel32, winmm, user32, psapi).
 ##   An example could be you want to define ENABLE_MY_DEBUG_OUTPUT in C+, then you write
 ##     CUSTOM_CFLAGS -DENABLE_MY_DEBUG_OUTPUT
 ##     in Makefile.settings and it will be defined for you without the risk of committing active debug output to other people
@@ -158,7 +160,9 @@ PRECOMPILE_CFLAGS1 = /Yu"
 PRECOMPILE_CFLAGS2 = CvGameCoreDLL.h" /Fp"$(Target_PCH)"
 
 #### LDFLAGS ####
-GLOBAL_LDFLAGS=/DLL /NOLOGO /SUBSYSTEM:WINDOWS /LARGEADDRESSAWARE /TLBID:1 /PDB:"$(Target_PDB)" $(CUSTOM_LDFLAGS) $(PROJECT_LDFLAGS)
+## Note: do not append $(CUSTOM_LDFLAGS) here — Makefile.settings often sets it to psapi.lib,
+## which must appear after .obj files. It is appended at the end of the link rule instead.
+GLOBAL_LDFLAGS=/DLL /NOLOGO /SUBSYSTEM:WINDOWS /LARGEADDRESSAWARE /TLBID:1 /PDB:"$(Target_PDB)" $(PROJECT_LDFLAGS)
 Debug_LDFLAGS=/INCREMENTAL /DEBUG /IMPLIB:"$(Target_STATICLIB)" $(GLOBAL_LDFLAGS)
 Release_LDFLAGS=/INCREMENTAL:NO /OPT:REF /OPT:ICF $(GLOBAL_LDFLAGS)
 Final_Release_LDFLAGS=/LTCG /INCREMENTAL:NO /OPT:REF /OPT:ICF $(GLOBAL_LDFLAGS)
@@ -189,7 +193,7 @@ PROJECT_LIBS=/LIBPATH:"$(BOOST_LIB_PATH)Python24/libs" /LIBPATH:"$(BOOST_LIB_PAT
 INCS = $(PROJECT_INCS) $(GLOBAL_INCS)
 
 #### LIBS ####
-GLOBAL_LIBS=/LIBPATH:"$(TOOLKIT)/lib" /LIBPATH:"$(PSDK)/Lib" winmm.lib user32.lib
+GLOBAL_LIBS=/LIBPATH:"$(TOOLKIT)/lib" /LIBPATH:"$(PSDK)/Lib" kernel32.lib winmm.lib user32.lib psapi.lib
 LIBS = $(PROJECT_LIBS) $(GLOBAL_LIBS)
 
 
@@ -281,7 +285,7 @@ Target_unfinished:
 
 $(Target_BIN_TEMP): $(OBJS) $(Target_RESOURCE)
 	@ECHO.Linking DLL
-	@$(LD) /out:$(Target_BIN_TEMP) $(LDFLAGS) $(LIBS) $(OBJS) $(Target_RESOURCE)
+	@$(LD) /out:$(Target_BIN_TEMP) $(LDFLAGS) $(OBJS) $(Target_RESOURCE) $(LIBS) kernel32.lib $(CUSTOM_LDFLAGS)
 
 {$(SOURCE_DIR)\.}.cpp{$(TEMP_TARGET_FILES)\.}.obj:
 	@ECHO.>"$*.obj.@"

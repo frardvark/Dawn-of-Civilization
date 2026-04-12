@@ -15,5 +15,6 @@ void CyRandomPythonInterface()
 	python::class_<CvRandom>("CyRandom")
 		.def("get", &CvRandom::get, CvRandom_get_overloads( args("usNum", "pszLog"), "returns a random number"))
 		.def("init", &CvRandom::init, "void (unsigned long int ulSeed)")
+		.def("getSeed", &CvRandom::getSeed, "unsigned long int ()") // RFC MP
 		;
 }

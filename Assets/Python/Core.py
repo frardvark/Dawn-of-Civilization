@@ -863,6 +863,9 @@ def period(identifier):
 	
 	
 def active():
+	# RFC MP: pitboss host UI should not treat "no human active" as the stability human slot
+	if game.isPitboss() and game.isPitbossHost():
+		return 0
 	return gc.getGame().getActivePlayer()
 
 

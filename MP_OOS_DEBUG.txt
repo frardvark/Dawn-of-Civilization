@@ -1,0 +1,36 @@
+Multiplayer / out-of-sync (OOS) triage — Dawn of Civilization
+============================================================
+
+1) After the CSV path fix (ModPaths + Files.getPath)
+   - Re-run the same LAN start. If yields / production / research still show cost 1 on all items, continue below.
+
+2) Client parity (fastest checks for “everything costs 1”)
+   - Same mod folder tree on every PC (no “Python only” drift).
+   - Same CvGameCoreDLL.dll (size + date; hash if you use one).
+   - Same scenario / game speed / handicap / advanced start options.
+   - RFC Dawn of Civilization.ini: SinglePlayerOnly = 0 for serious MP tests (already set in this tree).
+
+3) Logs (Windows)
+   - User data: Documents\My Games\Beyond the Sword\
+   - Look under Logs\, cache\, and autosaves from the turn before OOS.
+   - Enable extra logging in CivilizationIV.ini (My Games) if you use Python / verbose options.
+   - BUG mod logs: check BUG user settings for log paths.
+
+4) Python RNG / nondeterminism (grep starting points)
+   From the mod Assets\Python tree, these use the standard library random module (audit any call that runs during sim / turn processing, not only UI):
+   - Core.py: random.choice, random.sample, random.shuffle (around the ShuffledOrderedDict helpers).
+   - Screens\CvTopCivs.py: random.choice (typically UI-only).
+   - Contrib\UnitNameEventManager.py: random.randint.
+   - Contrib\RandomNameUtils.py: random.get (custom helper).
+   Prefer game-synchronized draws (e.g. getFakeRandNum in RFCUtils) for anything that mutates game state on all clients.
+
+5) Temporary MP sync line (both clients, one repro)
+   - Edit Assets\Python\MpSyncDebug.py: set MP_SYNC_DEBUG = True.
+   - Run the same MP session; compare CvUtil.pyPrint lines starting with [MP_SYNC_DEBUG] for turn / beginPlayer / activePlayer.
+   - Set MP_SYNC_DEBUG = False when finished.
+
+6) PitBoss / active player
+   - Review Core.active() and any host-only Python that might change world state when only one client runs it.
+
+7) PrivateMaps ModPath= line
+   - Scenario .txt files still contain ModPath=Mods\RFC Dawn of Civilization for the stock install name. If you rename the mod folder, align that with your install or the game’s expected Mods layout.

@@ -68,6 +68,23 @@ from Core import *
 def countAchievedGoals(argsList):
 	iPlayer = argsList[0]
 	return count(data.players[iPlayer].historicalGoals, lambda goal: goal.succeeded())
+
+def resetStabilityParameters(argsList):
+	"""RFC MP: called from CvGame / CvInitCore on MP load, reassign, and active-player changes."""
+	from Consts import iNumStabilityParameters
+	iNewPlayer = argsList[0]
+	data.resetHumanStability()
+	if iNewPlayer is not None and iNewPlayer >= 0:
+		p = player(iNewPlayer)
+		if p.isExisting():
+			for i in range(iNumStabilityParameters):
+				p.setStabilityParameter(i, 0)
+	else:
+		for iPl in players.all().alive():
+			p = player(iPl)
+			if p.isExisting():
+				for i in range(iNumStabilityParameters):
+					p.setStabilityParameter(i, 0)
 	
 ## World Builder ## Platypedia
 import CvPlatyBuilderScreen

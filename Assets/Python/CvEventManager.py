@@ -16,6 +16,7 @@ import CvCameraControls
 import sys
 import CvAdvisorUtils
 import CvPlatyBuilderSettings
+import MpSyncDebug
 
 gc = CyGlobalContext()
 localText = CyTranslator()
@@ -271,6 +272,7 @@ class CvEventManager(object):
 	def onBeginPlayerTurn(self, argsList):
 		'Called at the beginning of a players turn'
 		iGameTurn, iPlayer = argsList
+		MpSyncDebug.on_begin_player_turn(iGameTurn, iPlayer)
 
 	def onEndPlayerTurn(self, argsList):
 		'Called at the end of a players turn'

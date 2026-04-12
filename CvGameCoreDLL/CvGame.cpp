@@ -5013,9 +5013,13 @@ void CvGame::setActivePlayer(PlayerTypes eNewValue, bool bForceHotSeat)
 	if (eOldActivePlayer != eNewValue)
 	{
 		int iActiveNetId = ((NO_PLAYER != eOldActivePlayer) ? GET_PLAYER(eOldActivePlayer).getNetID() : -1);
-		//Rhye - start
-		GC.getInitCore().setSlotStatus(eOldActivePlayer, SS_COMPUTER);
-		GC.getInitCore().setSlotStatus(eNewValue, SS_TAKEN);
+		//Rhye - start (RFC MP: do not flip SS_COMPUTER/SS_TAKEN here; use switchActivePlayer for slot swap)
+		/*
+		if (!(isHotSeat() || isPbem()))
+		{
+			GC.getInitCore().setSlotStatus(eOldActivePlayer, SS_COMPUTER);
+			GC.getInitCore().setSlotStatus(eNewValue, SS_TAKEN);
+		}*/
 		//Rhye
 		GC.getInitCore().setActivePlayer(eNewValue);
 
@@ -5052,6 +5056,108 @@ void CvGame::setActivePlayer(PlayerTypes eNewValue, bool bForceHotSeat)
 			{
 				setGameState(GAMESTATE_ON);
 			}
+		}
+
+		// RFC MP: stability script reset for network MP (RFC source had nested condition that never fired; this matches the documented intent)
+		if (isNetworkMultiPlayer() && !(isHotSeat() || isPbem() || bForceHotSeat) && GET_PLAYER(eNewValue).isHuman())
+		{
+			long lResult = 0;
+			CyArgsList argsList;
+			argsList.add(eNewValue);
+			gDLL->getPythonIFace()->callFunction(PYScreensModule, "resetStabilityParameters", argsList.makeFunctionArgs(), &lResult);
+		}
+
+		if (!isHotSeat())
+		{
+			for (int iI = 0; iI < NUM_PLAYEROPTION_TYPES; iI++)
+			{
+				GET_PLAYER(eNewValue).setOption((PlayerOptionTypes)iI, GET_PLAYER(eOldActivePlayer).isOption((PlayerOptionTypes)iI));
+			}
+		}
+
+		if (GC.IsGraphicsInitialized())
+		{
+			GC.getMapINLINE().updateFog();
+			GC.getMapINLINE().updateVisibility();
+			GC.getMapINLINE().updateSymbols();
+			GC.getMapINLINE().updateMinimapColor();
+
+			updateUnitEnemyGlow();
+
+			gDLL->getInterfaceIFace()->setInAdvancedStart(false); // Leoreth
+			gDLL->getInterfaceIFace()->setWorldBuilder(false); // Leoreth
+			gDLL->getInterfaceIFace()->setEndTurnMessage(false);
+
+			gDLL->getInterfaceIFace()->clearSelectedCities();
+			gDLL->getInterfaceIFace()->clearSelectionList();
+
+			gDLL->getInterfaceIFace()->setDirty(PercentButtons_DIRTY_BIT, true);
+			gDLL->getInterfaceIFace()->setDirty(ResearchButtons_DIRTY_BIT, true);
+			gDLL->getInterfaceIFace()->setDirty(GameData_DIRTY_BIT, true);
+			gDLL->getInterfaceIFace()->setDirty(MinimapSection_DIRTY_BIT, true);
+			gDLL->getInterfaceIFace()->setDirty(CityInfo_DIRTY_BIT, true);
+			gDLL->getInterfaceIFace()->setDirty(UnitInfo_DIRTY_BIT, true);
+			gDLL->getInterfaceIFace()->setDirty(Flag_DIRTY_BIT, true);
+			gDLL->getInterfaceIFace()->setDirty(GlobeLayer_DIRTY_BIT, true);
+
+			gDLL->getEngineIFace()->SetDirty(CultureBorders_DIRTY_BIT, true);
+			gDLL->getInterfaceIFace()->setDirty(BlockadedPlots_DIRTY_BIT, true);
+		}
+
+		CvEventReporter::getInstance().playerSwitch(eOldActivePlayer, eNewValue);
+	}
+}
+
+void CvGame::switchActivePlayer(PlayerTypes eOldActivePlayer, PlayerTypes eNewValue, bool bForceHotSeat)
+{
+	if (eOldActivePlayer != eNewValue)
+	{
+		int iActiveNetId = ((NO_PLAYER != eOldActivePlayer) ? GET_PLAYER(eOldActivePlayer).getNetID() : -1);
+		//Rhye - start (RFC MP: explicit slot swap for rise-and-fall / hotseat-style switches)
+		GC.getInitCore().setSlotStatus(eOldActivePlayer, SS_COMPUTER);
+		GC.getInitCore().setSlotStatus(eNewValue, SS_TAKEN);
+		//Rhye
+		GC.getInitCore().setActivePlayer(eNewValue);
+
+		if (GET_PLAYER(eNewValue).isHuman() && (isHotSeat() || isPbem() || bForceHotSeat))
+		{
+			gDLL->getPassword(eNewValue);
+			setHotPbemBetweenTurns(false);
+			gDLL->getInterfaceIFace()->dirtyTurnLog(eNewValue);
+
+			if (NO_PLAYER != eOldActivePlayer)
+			{
+				int iInactiveNetId = GET_PLAYER(eNewValue).getNetID();
+				GET_PLAYER(eNewValue).setNetID(iActiveNetId);
+				GET_PLAYER(eOldActivePlayer).setNetID(iInactiveNetId);
+			}
+
+			GET_PLAYER(eNewValue).showMissedMessages();
+
+			if (countHumanPlayersAlive() == 1 && isPbem())
+			{
+				GC.getInitCore().setType(GAME_HOTSEAT_NEW);
+			}
+
+			sendPlayerOptions(true); //Rhye
+
+			if (isHotSeat() || bForceHotSeat)
+			{
+				sendPlayerOptions(true);
+			}
+
+			if (getGameState() == GAMESTATE_EXTENDED)
+			{
+				setGameState(GAMESTATE_ON);
+			}
+		}
+
+		if (isNetworkMultiPlayer() && !(isHotSeat() || isPbem() || bForceHotSeat) && GET_PLAYER(eNewValue).isHuman())
+		{
+			long lResult = 0;
+			CyArgsList argsList;
+			argsList.add(eNewValue);
+			gDLL->getPythonIFace()->callFunction(PYScreensModule, "resetStabilityParameters", argsList.makeFunctionArgs(), &lResult);
 		}
 
 		if (!isHotSeat())
@@ -9035,6 +9141,14 @@ void CvGame::read(FDataStreamBase* pStream)
 			}
 		}
 	}
+
+	// RFC MP: resync Python-side stability bookkeeping after load
+	{
+		long lResult = 0;
+		CyArgsList argsList;
+		argsList.add(-1);
+		gDLL->getPythonIFace()->callFunction(PYScreensModule, "resetStabilityParameters", argsList.makeFunctionArgs(), &lResult);
+	}
 }
 
 
@@ -10909,4 +11023,23 @@ void CvGame::setFirstDiscoveredTurn(TechTypes eTech, int iTurn)
 	FAssert(eTech < GC.getNumTechInfos());
 
 	m_aiFirstDiscoveredTurn[eTech] = iTurn;
+}
+
+// RFC MP: deterministic from synced seed + turn (avoid MP desync from asymmetric AI RNG consumption)
+int CvGame::getFakeRandNum(int iMax)
+{
+	if (iMax <= 0)
+	{
+		return 0;
+	}
+	return (getSorenRand().getSeed() % (getGameTurn() + 100)) % iMax;
+}
+
+int CvGame::getFakeBigRandNum(int iMax)
+{
+	if (iMax <= 0)
+	{
+		return 0;
+	}
+	return (getSorenRand().getSeed() % (getGameTurn() + 10000)) % iMax;
 }

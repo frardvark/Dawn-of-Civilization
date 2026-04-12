@@ -6,9 +6,11 @@ import BugPath as path
 import Setup
 import os
 
+from ModPaths import get_mod_export_dir
+
 EXPORT_MAPS_PATH = "Assets/Maps"
 
-IMAGE_LOCATION = os.getcwd() + "\Mods\\RFC Dawn of Civilization\\Export"
+IMAGE_LOCATION = get_mod_export_dir()
 iLongestName = len("Netherlands") #Netherlands currently has the longest civ name
 
 gc = CyGlobalContext()

@@ -13,6 +13,11 @@
 //
 #pragma warning( disable: 4530 )	// C++ exception handler used, but unwind semantics are not enabled
 
+// Use classic psapi.dll GetProcessMemoryInfo import (matches older psapi.lib on Civ4 SDK link path)
+#ifndef PSAPI_VERSION
+#define PSAPI_VERSION 1
+#endif
+
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <MMSystem.h>
@@ -26,9 +31,20 @@
 #include <math.h>
 #include <assert.h>
 #include <map>
+// Newer MSVC STL headers error on <hash_map> unless silenced (IntelliSense / wrong toolset).
+#if defined(_MSC_VER) && (_MSC_VER >= 1900)
+#ifndef _SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS
+#define _SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS
+#endif
+#endif
 #include <hash_map>
 
 #define DllExport   __declspec( dllexport ) 
+
+// Link kernel32/psapi even if Makefile.settings puts libs in the wrong order (Boost uses
+// InterlockedExchange; Psapi headers may import K32GetProcessMemoryInfo from kernel32).
+#pragma comment(lib, "kernel32.lib")
+#pragma comment(lib, "psapi.lib")
 
 //
 // GameBryo

@@ -1077,6 +1077,10 @@ def findSeaPlots(tile, iRange, iCiv):
 	"""Searches a sea plot that isn't occupied by a unit and isn't a civ's territory surrounding the starting coordinates"""
 	return plots.surrounding(tile, radius=iRange).sea().where(lambda p: not p.isUnit()).where(lambda p: p.getOwner() in [-1, slot(iCiv)]).random()
 
+# RFC MP: logged Soren RNG (MP-safe); use for gameplay tie-breaks instead of Python random
+def getFakeRandNum(iMax, logString):
+	return gc.getGame().getSorenRandNum(iMax, logString)
+
 # used: Rise, Stability
 def getPrevalentReligion(area, iStateReligionPlayer=None):
 	religions = infos.religions().where(lambda iReligion: not infos.religion(iReligion).isLocal())
@@ -1112,14 +1116,20 @@ def startObserverMode(iTurns):
 	
 	makeUnit(iObserverSlot, iCatapult, (0, 0))
 	
-	game.setActivePlayer(iObserverSlot, False)
+	iPrev = gc.getGame().getActivePlayer()
+	if iPrev < 0:
+		iPrev = iObserverSlot
+	game.switchActivePlayer(iPrev, iObserverSlot, False)
 	game.setAIAutoPlay(iTurns)
 	
 # used: Shortcuts
 def endObserverMode():
 	if data.iBeforeObserverSlot != -1:
 		if player(data.iBeforeObserverSlot).isAlive():
-			game.setActivePlayer(data.iBeforeObserverSlot, False)
+			iPrev = gc.getGame().getActivePlayer()
+			if iPrev < 0:
+				iPrev = data.iBeforeObserverSlot
+			game.switchActivePlayer(iPrev, data.iBeforeObserverSlot, False)
 			data.iBeforeObserverSlot = -1
 		else:
 			makeUnit(active(), iCatapult, (0, 0))

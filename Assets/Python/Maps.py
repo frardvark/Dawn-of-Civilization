@@ -14,6 +14,7 @@ from CvScreensInterface import worldBuilderScreen as worldBuilder
 from CvPlatyBuilderScreen import CvWorldBuilderScreen
 
 from CvWBDesc import CvWBDesc
+from ModPaths import get_mod_root
 
 import os
 import csv
@@ -136,7 +137,7 @@ def exportCSV():
 
 
 def exportScenario():
-	full_path = "Mods/RFC Dawn of Civilization/PrivateMaps/%s_WB" % getScenario().fileName
+	full_path = os.path.join(get_mod_root(), "PrivateMaps", "%s_WB" % getScenario().fileName)
 	CvWBDesc().write(full_path, bDevelopmentOnly=True)
 
 

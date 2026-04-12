@@ -4049,14 +4049,14 @@ void CvUnitAI::AI_spyMove()
 					return;
 				}
 			}
-			if (GC.getGame().getSorenRandNum(100, "AI Spy Skip Turn") > 5)
+			if (GC.getGameINLINE().getFakeRandNum(100) > 5)
 			{
 				getGroup()->pushMission(MISSION_SKIP);
 				return;
 			}
 		}
 
-		if (GC.getGameINLINE().getSorenRandNum(100, "AI Spy Espionage") < iEspionageChance)
+		if (GC.getGameINLINE().getFakeRandNum(100) < iEspionageChance)
 		{
 			if (AI_espionageSpy())
 			{
@@ -4075,7 +4075,7 @@ void CvUnitAI::AI_spyMove()
 			}
 		}
 
-		if (GC.getGame().getSorenRandNum(100, "AI Spy pillage improvement") < 25)
+		if (GC.getGameINLINE().getFakeRandNum(100) < 25)
 		{
 			if (AI_bonusOffenseSpy(3))
 			{
@@ -4093,7 +4093,7 @@ void CvUnitAI::AI_spyMove()
 
 	if (iEspionageChance > 0 && (plot()->isCity() || (plot()->getNonObsoleteBonusType(getTeam()) != NO_BONUS)))
 	{
-		if (GC.getGame().getSorenRandNum(7, "AI Spy Skip Turn") > 0)
+		if (GC.getGameINLINE().getFakeRandNum(7) > 0)
 		{
 			getGroup()->pushMission(MISSION_SKIP);
 			return;
@@ -4101,7 +4101,7 @@ void CvUnitAI::AI_spyMove()
 	}
 
 
-	if (GC.getGame().getSorenRandNum(4, "AI Spy Choose Movement"))
+	if (GC.getGameINLINE().getFakeRandNum(4))
 	{
 		if (AI_reconSpy(3))
 		{
@@ -10598,7 +10598,7 @@ bool CvUnitAI::AI_patrol()
 				{
 					if (generatePath(pAdjacentPlot, 0, true))
 					{
-						iValue = (1 + GC.getGameINLINE().getSorenRandNum(10000, "AI Patrol"));
+						iValue = (1 + GC.getGameINLINE().getFakeBigRandNum(10000));
 
 						if (isBarbarian())
 						{
@@ -10690,7 +10690,7 @@ bool CvUnitAI::AI_defend()
 							{
 								if (iPathTurns <= 1)
 								{
-									iValue = (1 + GC.getGameINLINE().getSorenRandNum(10000, "AI Defend"));
+									iValue = (1 + GC.getGameINLINE().getFakeBigRandNum(10000));
 
 									if (iValue > iBestValue)
 									{
@@ -11084,7 +11084,7 @@ bool CvUnitAI::AI_explore()
 				iValue += 100000;
 			}
 
-			if (iValue > 0 || GC.getGameINLINE().getSorenRandNum(4, "AI make explore faster ;)") == 0)
+			if (iValue > 0 || GC.getGameINLINE().getFakeBigRandNum(4) == 0)
 			{
 				if (!(pLoopPlot->isRevealed(getTeam(), false)))
 				{
@@ -16249,7 +16249,7 @@ bool CvUnitAI::AI_missileLoad(UnitAITypes eTargetUnitAI, int iMaxOwnUnitAI, bool
 					{
 						int iValue = 100;
 
-						iValue += GC.getGame().getSorenRandNum(100, "AI missile load");
+						iValue += GC.getGameINLINE().getFakeRandNum(100);
 
 						iValue *= 1 + pLoopUnit->getCargo();
 
@@ -17068,12 +17068,12 @@ bool CvUnitAI::AI_reconSpy(int iRange)
 				int iValue = 0;
 				if (pLoopPlot->getPlotCity() != NULL)
 				{
-					iValue += GC.getGameINLINE().getSorenRandNum(4000, "AI Spy Scout City");
+					iValue += GC.getGameINLINE().getFakeBigRandNum(4000);
 				}
 
 				if (pLoopPlot->getBonusType(getTeam()) != NO_BONUS)
 				{
-					iValue += GC.getGameINLINE().getSorenRandNum(1000, "AI Spy Recon Bonus");
+					iValue += GC.getGameINLINE().getFakeBigRandNum(1000);
 				}
 
 				for (int iI = 0; iI < NUM_DIRECTION_TYPES; iI++)
@@ -17102,7 +17102,7 @@ bool CvUnitAI::AI_reconSpy(int iRange)
 						if (iPathTurns <= iRange)
 						{
 							// don't give each and every plot in range a value before generating the patch (performance hit)
-							iValue += GC.getGameINLINE().getSorenRandNum(250, "AI Spy Scout Best Plot");
+							iValue += GC.getGameINLINE().getFakeBigRandNum(250);
 
 							iValue *= iDistance;
 
@@ -17159,7 +17159,7 @@ int CvUnitAI::AI_getEspionageTargetValue(CvPlot* pPlot, int iMaxPath)
 			if (pPlot->isCity())
 			{
 				iValue += 10;
-				int iRand = GC.getGame().getSorenRandNum(8, "AI spy choose city");
+				int iRand = GC.getGameINLINE().getFakeRandNum(8);
 				iValue += iRand * iRand;
 			}
 			else

@@ -13,6 +13,9 @@ typedef list<char*> LISTCHAR;
 
 #define NUM_CIVS				(66)
 
+// RFC MP pitboss: open slots at/above this index become AI in closeInactiveSlots (tune if scenario layout differs)
+#define NUM_MAJOR_PLAYERS		(28)
+
 #define NUM_ERAS				(ERA_DIGITAL+1)
 
 #define PAGAN_TEMPLE			((BuildingTypes)GC.getInfoTypeForString("BUILDING_PAGAN_TEMPLE"))

@@ -6,11 +6,13 @@ import os
 import csv
 import cStringIO
 
+from ModPaths import get_maps_file_path
+
 MAPS_PATH = "Assets/Maps"
 
 
 def getPath(file_name):
-	return "%s\Mods\\RFC Dawn of Civilization\\Assets\\Maps\\%s" % (os.getcwd(), file_name)
+	return get_maps_file_path(file_name)
 
 
 class UnicodeWriter:
@@ -58,10 +60,14 @@ class FileMap(object):
 	@classmethod
 	def read(cls, file_path, bIgnoreMissing=False):
 		try:
-			file = open(getPath(file_path))
+			resolved = getPath(file_path)
+			file = open(resolved)
 		except IOError:
 			if not bIgnoreMissing:
-				raise Exception("No CSV file on file path: '%s'" % file_path)
+				raise Exception(
+					"No CSV file on file path: '%s' (resolved: '%s')"
+					% (file_path, resolved)
+				)
 			return
 		
 		try:
@@ -134,7 +140,8 @@ class FileDict(object):
 	@staticmethod
 	def read(file_path):
 		try:
-			file = open(getPath(file_path))
+			resolved = getPath(file_path)
+			file = open(resolved)
 		except IOError:
 			return
 		

@@ -2792,7 +2792,7 @@ UnitTypes CvCityAI::AI_bestUnit(bool bAsync, AdvisorTypes eIgnoreAdvisor, UnitAI
 			}
 			else
 			{
-				aiUnitAIVal[iI] += GC.getGameINLINE().getSorenRandNum(iMilitaryWeight, "AI Best UnitAI");
+				aiUnitAIVal[iI] += GC.getGameINLINE().getFakeRandNum(iMilitaryWeight);
 			}
 
 			if (aiUnitAIVal[iI] > iBestValue)
@@ -2962,7 +2962,7 @@ UnitTypes CvCityAI::AI_bestUnitAI(UnitAITypes eUnitAI, bool bAsync, AdvisorTypes
 								}
 								else
 								{
-									iValue *= (GC.getGameINLINE().getSorenRandNum(50, "AI Best Unit") + 100);
+									iValue *= (GC.getGameINLINE().getFakeRandNum(50) + 100);
 									iValue /= 100;
 								}
 
@@ -3140,7 +3140,7 @@ BuildingTypes CvCityAI::AI_bestBuildingThreshold(int iFocusFlags, int iMaxTurns,
 										}
 										else
 										{
-											iTempValue = GC.getGameINLINE().getSorenRandNum(GC.getLeaderHeadInfo(getPersonalityType()).getWonderConstructRand(), "Wonder Construction Rand");
+											iTempValue = GC.getGameINLINE().getFakeRandNum(GC.getLeaderHeadInfo(getPersonalityType()).getWonderConstructRand());
 										}
 
 										if (bAreaAlone)
@@ -3160,7 +3160,7 @@ BuildingTypes CvCityAI::AI_bestBuildingThreshold(int iFocusFlags, int iMaxTurns,
 									}
 									else
 									{
-										iValue *= (GC.getGameINLINE().getSorenRandNum(25, "AI Best Building") + 100);
+										iValue *= (GC.getGameINLINE().getFakeRandNum(25) + 100);
 										iValue /= 100;
 									}
 								}

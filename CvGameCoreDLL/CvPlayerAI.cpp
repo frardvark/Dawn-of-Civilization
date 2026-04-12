@@ -3064,7 +3064,7 @@ int CvPlayerAI::AI_targetCityValue(CvCity* pCity, bool bRandomize, bool bIgnoreA
 
 	if (bRandomize)
 	{
-		iValue += GC.getGameINLINE().getSorenRandNum(((pCity->getPopulation() / 2) + 1), "AI Target City Value");
+		iValue += GC.getGameINLINE().getFakeRandNum((pCity->getPopulation() / 2) + 1);
 	}
 
 	return iValue;

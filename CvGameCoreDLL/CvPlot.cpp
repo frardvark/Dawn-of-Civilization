@@ -9701,12 +9701,21 @@ void CvPlot::doCulture()
 			{
 				if (!(pCity->isOccupation()))
 				{
-					if (GC.getGameINLINE().getSorenRandNum(100, "Revolt #1") < pCity->getRevoltTestProbability())
+					if (GC.getGameINLINE().getFakeRandNum(100) < pCity->getRevoltTestProbability())
 					{
 						iCityStrength = pCity->cultureStrength(eCulturalOwner);
 						iGarrison = pCity->cultureGarrison(eCulturalOwner);
 
-						if ((GC.getGameINLINE().getSorenRandNum(iCityStrength, "Revolt #2") > iGarrison) || pCity->isBarbarian())
+						int iTempModifier;
+						if (iCityStrength == 0)
+						{
+							iTempModifier = 0;
+						}
+						else
+						{
+							iTempModifier = GC.getGameINLINE().getFakeRandNum(iCityStrength);
+						}
+						if (iTempModifier > iGarrison || pCity->isBarbarian())
 						{
 							CLinkList<IDInfo> oldUnits;
 

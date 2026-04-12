@@ -128,7 +128,10 @@ def quickSpawn(iCiv):
 	capital = plots.capital(iCiv)
 	player(iPlayer).found(*location(capital))
 	city(capital).setPopulation(20)
-	game.setActivePlayer(iPlayer, False)
+	iPrev = gc.getGame().getActivePlayer()
+	if iPrev < 0:
+		iPrev = iPlayer
+	game.switchActivePlayer(iPrev, iPlayer, False)
 
 def advanceEra(iCiv):
 	player(iCiv).setCurrentEra(player(iCiv).getCurrentEra()+1)

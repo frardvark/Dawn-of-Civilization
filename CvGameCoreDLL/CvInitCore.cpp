@@ -9,6 +9,8 @@
 #include "CvDLLUtilityIFaceBase.h"
 #include "CvGameAI.h"
 #include "CvGameCoreUtils.h"
+#include "CvPlayerAI.h"
+#include "CvRhyes.h"
 
 // BUG - Save Format - start
 #include "BugMod.h"
@@ -281,11 +283,10 @@ bool CvInitCore::getSlotVacant(PlayerTypes eID) const
 
 	if ( checkBounds(eID, 0, MAX_CIV_PLAYERS) )
 	{
-		bool bTakeoverAI = getMPOption(MPOPTION_TAKEOVER_AI);
 		SlotStatus eStatus = getSlotStatus(eID);
 
-		// Check the status of this slot
-		if ( (eStatus == SS_OPEN) || (bTakeoverAI && (eStatus == SS_COMPUTER)) )
+		// RFC MP: treat takeover of AI slots as allowed when not hotseat/PBEM (ignore MPOPTION_TAKEOVER_AI)
+		if ( (eStatus == SS_OPEN) || ((eStatus == SS_COMPUTER) && !(getHotseat() || getPbem())) )
 		{
 			bRetVal = ( getSlotClaim(eID) != SLOTCLAIM_ASSIGNED );
 		}
@@ -310,8 +311,8 @@ PlayerTypes CvInitCore::getAvailableSlot()
 		}
 	}
 
-	// That didn't work, check to see if we can assign computer slots
-	if (getMPOption(MPOPTION_TAKEOVER_AI))
+	// That didn't work, check to see if we can assign computer slots (RFC MP: always except hotseat/PBEM)
+	if (!(getHotseat() || getPbem()))
 	{
 		for (i = 0; i < MAX_CIV_PLAYERS; ++i)
 		{
@@ -422,6 +423,14 @@ void CvInitCore::reassignPlayer(PlayerTypes eOldID, PlayerTypes eNewID)
 		m_aszPythonCheck[eOldID] = szPythonCheck;
 		m_aszXMLCheck[eOldID] = szXMLCheck;
 
+		// RFC MP: clear stability script state so clients stay aligned
+		{
+			long lResult = 0;
+			CyArgsList argsList;
+			argsList.add(eNewID);
+			gDLL->getPythonIFace()->callFunction(PYScreensModule, "resetStabilityParameters", argsList.makeFunctionArgs(), &lResult);
+		}
+
 		// We may have a new active player id...
 		if (getActivePlayer() == eOldID)
 		{
@@ -452,7 +461,7 @@ void CvInitCore::closeInactiveSlots()
 		PlayerTypes eID = (PlayerTypes)i;
 		if (getSlotStatus(eID) == SS_OPEN)
 		{
-			if (getPitboss() || getHotseat() || getPbem())
+			if (getHotseat() || getPbem())
 			{
 				// Pitboss & hotseat - all "open" slots are non-present human players
 				setSlotStatus(eID, SS_TAKEN);
@@ -461,6 +470,16 @@ void CvInitCore::closeInactiveSlots()
 			{
 				// Multiplayer scenario - all "open" slots should be filled with an AI player
 				setSlotStatus(eID, SS_COMPUTER);
+			}
+			else if (getPitboss())
+			{
+				if (i < NUM_MAJOR_PLAYERS)
+				{
+				}
+				else
+				{
+					setSlotStatus(eID, SS_COMPUTER);
+				}
 			}
 			else
 			{

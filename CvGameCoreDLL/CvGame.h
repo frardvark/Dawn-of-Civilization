@@ -298,6 +298,7 @@ public:
 
 	DllExport PlayerTypes getActivePlayer() const;																				// Exposed to Python
 	DllExport void setActivePlayer(PlayerTypes eNewValue, bool bForceHotSeat = false);		// Exposed to Python
+	DllExport void switchActivePlayer(PlayerTypes eOldActivePlayer, PlayerTypes eNewValue, bool bForceHotSeat = false);		// Exposed to Python (RFC MP)
 	DllExport void updateUnitEnemyGlow();
 
 	DllExport HandicapTypes getHandicapType() const;
@@ -497,6 +498,9 @@ public:
 	void addPlayer(PlayerTypes eNewPlayer, LeaderHeadTypes eLeader, CivilizationTypes eCiv, int iBirthTurn, bool bAlive, bool bMinor);   // Exposed to Python
 
 	bool testVictory(VictoryTypes eVictory, TeamTypes eTeam, bool* pbEndScore = NULL) const;
+
+	int getFakeRandNum(int iMax); // RFC MP (lockstep-safe tie-break / flavor)
+	int getFakeBigRandNum(int iMax); // RFC MP
 
 	bool isCompetingCorporation(CorporationTypes eCorporation1, CorporationTypes eCorporation2) const;
 

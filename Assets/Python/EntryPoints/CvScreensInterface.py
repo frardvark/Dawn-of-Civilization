@@ -68,6 +68,18 @@ from Core import *
 def countAchievedGoals(argsList):
 	iPlayer = argsList[0]
 	return count(data.players[iPlayer].historicalGoals, lambda goal: goal.succeeded())
+
+
+def resetStabilityParameters(argsList):
+	"""CvGameCoreDLL (RFC MP parity): reset stability buffers after load (arg -1) or player slot reassignment (player id)."""
+	iPlayer = argsList[0]
+	if iPlayer is None or iPlayer < 0:
+		data.resetHumanStability()
+		for i in range(gc.getMAX_PLAYERS()):
+			data.players[i].resetStability()
+	elif iPlayer < gc.getMAX_PLAYERS():
+		data.players[iPlayer].resetStability()
+		data.resetHumanStability()
 	
 ## World Builder ## Platypedia
 import CvPlatyBuilderScreen

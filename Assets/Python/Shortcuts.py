@@ -77,7 +77,7 @@ def handleCivSwitch(iPlayer, netUserData, popupReturn):
 	iNewPlayer = popupReturn.getSelectedPullDownValue(0)
 
 	if iNewPlayer != iCurrentPlayer:
-		game.setActivePlayer(iNewPlayer, False)
+		game.switchActivePlayer(iCurrentPlayer, iNewPlayer, False)
 
 
 ### FUNCTIONS ###
@@ -94,13 +94,21 @@ def startObserverMode(iTurns):
 	
 	makeUnit(iObserverSlot, iCatapult, (0, 0))
 	
-	game.setActivePlayer(iObserverSlot, False)
+	iPrev = game.getActivePlayer()
+	if iPrev >= 0 and iPrev != iObserverSlot:
+		game.switchActivePlayer(iPrev, iObserverSlot, False)
+	else:
+		game.setActivePlayer(iObserverSlot, False)
 	game.setAIAutoPlay(iTurns)
 	
 def endObserverMode():
 	if data.iBeforeObserverSlot != -1:
 		if player(data.iBeforeObserverSlot).isAlive():
-			game.setActivePlayer(data.iBeforeObserverSlot, False)
+			iPrev = game.getActivePlayer()
+			if iPrev >= 0 and iPrev != data.iBeforeObserverSlot:
+				game.switchActivePlayer(iPrev, data.iBeforeObserverSlot, False)
+			else:
+				game.setActivePlayer(data.iBeforeObserverSlot, False)
 			data.iBeforeObserverSlot = -1
 		else:
 			makeUnit(active(), iCatapult, (0, 0))

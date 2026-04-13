@@ -11,7 +11,6 @@ from CoreTypes import Civ
 import Popup
 import BugCore
 
-import random
 import re
 import types
 
@@ -695,8 +694,9 @@ def chance(iPercentage):
 def random_entry(iterable, otherwise=None):
 	if not iterable:
 		return otherwise
-		
-	return random.choice(iterable)
+	# Use game RNG so all MP clients stay in sync (Python random.* is not synchronized)
+	seq = list(iterable)
+	return seq[gc.getGame().getSorenRandNum(len(seq), "random_entry")]
 	
 
 def name(identifier):
@@ -995,7 +995,12 @@ class EntityCollection(object):
 		if not self: return self.empty()
 		iSampleSize = min(iSampleSize, len(self))
 		if iSampleSize <= 0: return self.empty()
-		return self.copy(random.sample(self._keys, iSampleSize))
+		keys = self._keys[:]
+		n = len(keys)
+		for i in range(iSampleSize):
+			j = i + gc.getGame().getSorenRandNum(n - i, "entity_sample")
+			keys[i], keys[j] = keys[j], keys[i]
+		return self.copy(keys[:iSampleSize])
 	
 	def sample_priority(self, iSampleSize, priority_func):
 		if not self:
@@ -1075,7 +1080,9 @@ class EntityCollection(object):
 		
 	def shuffle(self):
 		shuffled = self._keys[:]
-		random.shuffle(shuffled)
+		for i in range(len(shuffled) - 1, 0, -1):
+			j = gc.getGame().getSorenRandNum(i + 1, "entity_shuffle")
+			shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
 		return self.copy(shuffled)
 		
 	def fraction(self, iDenominator):

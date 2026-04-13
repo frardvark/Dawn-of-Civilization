@@ -673,6 +673,12 @@ void CyGame::setActivePlayer(int /*PlayerTypes*/ eNewValue, bool bForceHotSeat)
 		m_pGame->setActivePlayer((PlayerTypes)eNewValue, bForceHotSeat);
 }
 
+void CyGame::switchActivePlayer(int /*PlayerTypes*/ eOldActivePlayer, int /*PlayerTypes*/ eNewValue, bool bForceHotSeat)
+{
+	if (m_pGame)
+		m_pGame->switchActivePlayer((PlayerTypes)eOldActivePlayer, (PlayerTypes)eNewValue, bForceHotSeat);
+}
+
 int CyGame::getPausePlayer()
 {
 	return m_pGame ? m_pGame->getPausePlayer() : -1;

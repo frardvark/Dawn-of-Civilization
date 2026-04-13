@@ -422,6 +422,14 @@ void CvInitCore::reassignPlayer(PlayerTypes eOldID, PlayerTypes eNewID)
 		m_aszPythonCheck[eOldID] = szPythonCheck;
 		m_aszXMLCheck[eOldID] = szXMLCheck;
 
+		// RFC MP — reset per-player Python scenario parameters after slot identity swap (stability UI buffers, etc.)
+		{
+			long lResult = 0;
+			CyArgsList argsList;
+			argsList.add(eNewID);
+			gDLL->getPythonIFace()->callFunction(PYScreensModule, "resetStabilityParameters", argsList.makeFunctionArgs(), &lResult);
+		}
+
 		// We may have a new active player id...
 		if (getActivePlayer() == eOldID)
 		{

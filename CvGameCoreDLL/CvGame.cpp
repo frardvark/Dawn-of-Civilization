@@ -5013,9 +5013,13 @@ void CvGame::setActivePlayer(PlayerTypes eNewValue, bool bForceHotSeat)
 	if (eOldActivePlayer != eNewValue)
 	{
 		int iActiveNetId = ((NO_PLAYER != eOldActivePlayer) ? GET_PLAYER(eOldActivePlayer).getNetID() : -1);
-		//Rhye - start
-		GC.getInitCore().setSlotStatus(eOldActivePlayer, SS_COMPUTER);
-		GC.getInitCore().setSlotStatus(eNewValue, SS_TAKEN);
+		//Rhye — RFC MP: slot status swap disabled here (avoids breaking NetID / lobby slots in network MP). Use switchActivePlayer for RFC civ switching.
+		/*
+		if (!(isHotSeat() || isPbem()))// || bForceHotSeat))
+		{
+			GC.getInitCore().setSlotStatus(eOldActivePlayer, SS_COMPUTER);
+			GC.getInitCore().setSlotStatus(eNewValue, SS_TAKEN);
+		}*/
 		//Rhye
 		GC.getInitCore().setActivePlayer(eNewValue);
 
@@ -5041,6 +5045,14 @@ void CvGame::setActivePlayer(PlayerTypes eNewValue, bool bForceHotSeat)
 			}
 
 			sendPlayerOptions(true); //Rhye
+
+			if (!(isHotSeat() || isPbem() || bForceHotSeat))
+			{
+				long lResult = 0;
+				CyArgsList argsList;
+				argsList.add(eNewValue);
+				gDLL->getPythonIFace()->callFunction(PYScreensModule, "resetStabilityParameters", argsList.makeFunctionArgs(), &lResult);
+			}
 
 			if (isHotSeat() || bForceHotSeat)
 			{
@@ -5093,6 +5105,95 @@ void CvGame::setActivePlayer(PlayerTypes eNewValue, bool bForceHotSeat)
 
 		CvEventReporter::getInstance().playerSwitch(eOldActivePlayer, eNewValue);
 	}
+}
+
+void CvGame::switchActivePlayer(PlayerTypes eOldActivePlayer, PlayerTypes eNewValue, bool bForceHotSeat)
+{
+	if (eOldActivePlayer == eNewValue)
+	{
+		return;
+	}
+
+	int iActiveNetId = ((NO_PLAYER != eOldActivePlayer) ? GET_PLAYER(eOldActivePlayer).getNetID() : -1);
+
+	// RFC MP: Rhye slot swap on this path only (setActivePlayer leaves slot swap commented for network MP)
+	GC.getInitCore().setSlotStatus(eOldActivePlayer, SS_COMPUTER);
+	GC.getInitCore().setSlotStatus(eNewValue, SS_TAKEN);
+
+	GC.getInitCore().setActivePlayer(eNewValue);
+
+	if (GET_PLAYER(eNewValue).isHuman() && (isHotSeat() || isPbem() || bForceHotSeat))
+	{
+		gDLL->getPassword(eNewValue);
+		setHotPbemBetweenTurns(false);
+		gDLL->getInterfaceIFace()->dirtyTurnLog(eNewValue);
+
+		if (NO_PLAYER != eOldActivePlayer)
+		{
+			int iInactiveNetId = GET_PLAYER(eNewValue).getNetID();
+			GET_PLAYER(eNewValue).setNetID(iActiveNetId);
+			GET_PLAYER(eOldActivePlayer).setNetID(iInactiveNetId);
+		}
+
+		GET_PLAYER(eNewValue).showMissedMessages();
+
+		if (countHumanPlayersAlive() == 1 && isPbem())
+		{
+			GC.getInitCore().setType(GAME_HOTSEAT_NEW);
+		}
+
+		sendPlayerOptions(true);
+
+		if (isHotSeat() || bForceHotSeat)
+		{
+			sendPlayerOptions(true);
+		}
+
+		// Leoreth: allow winning again after switching
+		if (getGameState() == GAMESTATE_EXTENDED)
+		{
+			setGameState(GAMESTATE_ON);
+		}
+	}
+
+	if (!isHotSeat())
+	{
+		for (int iI = 0; iI < NUM_PLAYEROPTION_TYPES; iI++)
+		{
+			GET_PLAYER(eNewValue).setOption((PlayerOptionTypes)iI, GET_PLAYER(eOldActivePlayer).isOption((PlayerOptionTypes)iI));
+		}
+	}
+
+	if (GC.IsGraphicsInitialized())
+	{
+		GC.getMapINLINE().updateFog();
+		GC.getMapINLINE().updateVisibility();
+		GC.getMapINLINE().updateSymbols();
+		GC.getMapINLINE().updateMinimapColor();
+
+		updateUnitEnemyGlow();
+
+		gDLL->getInterfaceIFace()->setInAdvancedStart(false);
+		gDLL->getInterfaceIFace()->setWorldBuilder(false);
+		gDLL->getInterfaceIFace()->setEndTurnMessage(false);
+
+		gDLL->getInterfaceIFace()->clearSelectedCities();
+		gDLL->getInterfaceIFace()->clearSelectionList();
+
+		gDLL->getInterfaceIFace()->setDirty(PercentButtons_DIRTY_BIT, true);
+		gDLL->getInterfaceIFace()->setDirty(ResearchButtons_DIRTY_BIT, true);
+		gDLL->getInterfaceIFace()->setDirty(GameData_DIRTY_BIT, true);
+		gDLL->getInterfaceIFace()->setDirty(MinimapSection_DIRTY_BIT, true);
+		gDLL->getInterfaceIFace()->setDirty(CityInfo_DIRTY_BIT, true);
+		gDLL->getInterfaceIFace()->setDirty(UnitInfo_DIRTY_BIT, true);
+		gDLL->getInterfaceIFace()->setDirty(Flag_DIRTY_BIT, true);
+		gDLL->getInterfaceIFace()->setDirty(GlobeLayer_DIRTY_BIT, true);
+
+		gDLL->getEngineIFace()->SetDirty(CultureBorders_DIRTY_BIT, true);
+		gDLL->getInterfaceIFace()->setDirty(BlockadedPlots_DIRTY_BIT, true);
+	}
+
+	CvEventReporter::getInstance().playerSwitch(eOldActivePlayer, eNewValue);
 }
 
 void CvGame::updateUnitEnemyGlow()
@@ -9034,6 +9135,14 @@ void CvGame::read(FDataStreamBase* pStream)
 				setCivilizationHistory((HistoryTypes)iI, (CivilizationTypes)iCivilization, iTurn, iValue);
 			}
 		}
+	}
+
+	// RFC MP — align Python scenario buffers after load (argument unused in DoC implementation)
+	{
+		long lResult = 0;
+		CyArgsList argsList;
+		argsList.add(-1);
+		gDLL->getPythonIFace()->callFunction(PYScreensModule, "resetStabilityParameters", argsList.makeFunctionArgs(), &lResult);
 	}
 }
 

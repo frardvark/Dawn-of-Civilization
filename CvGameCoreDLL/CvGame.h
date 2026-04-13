@@ -298,6 +298,7 @@ public:
 
 	DllExport PlayerTypes getActivePlayer() const;																				// Exposed to Python
 	DllExport void setActivePlayer(PlayerTypes eNewValue, bool bForceHotSeat = false);		// Exposed to Python
+	DllExport void switchActivePlayer(PlayerTypes eOldActivePlayer, PlayerTypes eNewValue, bool bForceHotSeat = false);		// Exposed to Python — RFC MP civ switch (keeps NetID / slot model sane in MP)
 	DllExport void updateUnitEnemyGlow();
 
 	DllExport HandicapTypes getHandicapType() const;

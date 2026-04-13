@@ -1056,7 +1056,7 @@ class Birth(object):
 		iPreviousPlayer = active()
 		iOldHandicap = player(iPreviousPlayer).getHandicapType()
 		
-		game.setActivePlayer(self.iPlayer, False)
+		game.switchActivePlayer(iPreviousPlayer, self.iPlayer, False)
 		
 		player(iPreviousPlayer).setHandicapType(self.player.getHandicapType())
 		self.player.setHandicapType(iOldHandicap)

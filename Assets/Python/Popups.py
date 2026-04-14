@@ -191,7 +191,7 @@ class PopupLauncher(object):
 		else:
 			handle(*data[:len(arg_names)])
 	
-	def launch(self, *args):
+	def launch(self, *args, **kwargs):
 		# create popup
 		popup = CyPopupInfo()
 		popup.setButtonPopupType(ButtonPopupTypes.BUTTONPOPUP_PYTHON)
@@ -213,8 +213,11 @@ class PopupLauncher(object):
 		for type, handle, label, button in self._choices:
 			popup.addPythonButton(label, self.parse_button(button))
 		
-		# launch
-		popup.addPopup(active())
+		# launch (ePopupPlayer: who sees the popup — use slot owner in MP so simultaneous is not wrong-active)
+		iPopupPlayer = kwargs.pop("ePopupPlayer", active())
+		if kwargs:
+			raise TypeError("launch() got unexpected keyword arguments: %s" % ", ".join(kwargs.keys()))
+		popup.addPopup(iPopupPlayer)
 
 
 popup = PopupLauncherBuilderFactory()

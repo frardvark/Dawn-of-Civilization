@@ -1022,7 +1022,9 @@ class Birth(object):
 			self.assignAdditionalTechs()
 			return
 
-		self.switchPopup.text(adjective(self.iPlayer)).cancel().yesSwitch().launch()
+		# Use spawning civ adjective (iCiv), not the slot’s current civ (iPlayer) — avoids “other human” wording in MP/SP.
+		szSpawnAdj = infos.civ(self.iCiv).getAdjective(0)
+		self.switchPopup.text(szSpawnAdj).cancel().yesSwitch().launch(ePopupPlayer=self.iPlayer)
 	
 	def canSwitch(self):
 		if not MainOpt.isSwitchPopup():

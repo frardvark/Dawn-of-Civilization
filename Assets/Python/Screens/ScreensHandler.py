@@ -36,6 +36,67 @@ PyPlayer = PyHelpers.PyPlayer
 PyInfo = PyHelpers.PyInfo
 
 
+def _mp002_log_candidate_paths():
+	"""MP-002: try several paths — Civ4 often resolves __file__ relative to cwd, so <mod>/playtest-logs may land under the BtS install folder."""
+	import os
+	paths = []
+	prof = os.environ.get("USERPROFILE")
+	if prof:
+		paths.append(os.path.join(prof, "Documents", "RFC Modding", "docs", "playtest-logs", "mp002-lan-debug.ndjson"))
+		paths.append(os.path.join(prof, "Documents", "RFC Modding", "playtest-logs", "mp002-lan-debug.ndjson"))
+	try:
+		_screens = os.path.dirname(os.path.abspath(__file__))
+		mod_root = os.path.dirname(os.path.dirname(os.path.dirname(_screens)))
+		paths.append(os.path.join(mod_root, "playtest-logs", "mp002-lan-debug.ndjson"))
+	except Exception:
+		pass
+	out = []
+	for p in paths:
+		if p and p not in out:
+			out.append(p)
+	return out
+
+
+def _mp002_append_ndjson(data):
+	"""Write one NDJSON line; Python 2.x compatible (no json module)."""
+	import os
+	import time
+	pairs = [
+		'"timestamp":%d' % long(time.time() * 1000),
+	]
+	items = []
+	for k, v in data.items():
+		if isinstance(v, basestring):
+			items.append('"%s":"%s"' % (str(k), str(v).replace("\\", "\\\\").replace('"', '\\"')))
+		elif v is True:
+			items.append('"%s":true' % k)
+		elif v is False:
+			items.append('"%s":false' % k)
+		elif v is None:
+			items.append('"%s":null' % k)
+		else:
+			if isinstance(v, (int, long)):
+				nums = str(long(v))
+			else:
+				nums = str(v)
+			items.append('"%s":%s' % (k, nums))
+	line = "{%s,%s}\n" % (",".join(pairs), ",".join(items))
+	for path in _mp002_log_candidate_paths():
+		try:
+			logdir = os.path.dirname(path)
+			if logdir and not os.path.isdir(logdir):
+				try:
+					os.makedirs(logdir)
+				except OSError:
+					pass
+			f = open(path, "a")
+			f.write(line)
+			f.close()
+			return
+		except Exception:
+			continue
+
+
 @handler("kbdEvent")
 def onKbdEvent(eventType, key, mx, my, px, py):
 	game = gc.getGame()
@@ -175,6 +236,73 @@ def onGameStart():
 @handler("BeginGameTurn")
 def onBeginGameTurn(iGameTurn):
 	'Called at the beginning of the end of each turn'
+	# MP-002: optional probe in any multiplayer game (LAN, hotseat, PBEM) — not single-player.
+	if gc.getGame().isGameMultiPlayer():
+		try:
+			g = gc.getGame()
+			iSpeed = g.getGameSpeedType()
+			gs = gc.getGameSpeedInfo(iSpeed)
+			if g.isMPOption(MultiplayerOptionTypes.MPOPTION_SIMULTANEOUS_TURNS):
+				iSimul = 1
+			else:
+				iSimul = 0
+			iAct = g.getActivePlayer()
+			iFood = iProd = iRes = -1
+			iProdNeeded = iProdStored = iProdPerTurn = -1
+			sProdName = ""
+			if iAct >= 0:
+				p = gc.getPlayer(iAct)
+				if p.getNumCities() > 0:
+					c = p.getCity(0)
+					if c and not c.isNone():
+						iFood = c.getYieldRate(YieldTypes.YIELD_FOOD)
+						iProd = c.getYieldRate(YieldTypes.YIELD_PRODUCTION)
+						iRes = p.calculateResearchRate(-1)
+						iProdNeeded = c.getProductionNeeded()
+						iProdStored = c.getProduction()
+						iProdPerTurn = c.getCurrentProductionDifference(False, False)
+						sProdName = c.getProductionName()
+			iScenarioStart = -1
+			iTurns5 = -1
+			bScenarioStart = False
+			try:
+				bScenarioStart = scenarioStart()
+				iScenarioStart = int(scenarioStartTurn())
+				iTurns5 = int(turns(5))
+			except Exception:
+				pass
+			iChecksum = g.calculateSyncChecksum()
+			_mp002_append_ndjson({
+				"probe": "MP002",
+				"netMP": g.isNetworkMultiPlayer(),
+				"hotSeat": g.isHotSeat(),
+				"argTurn": int(iGameTurn),
+				"gameTurn": g.getGameTurn(),
+				"elapsed": g.getElapsedGameTurns(),
+				"startYear": g.getStartYear(),
+				"turnYear": g.getGameTurnYear(),
+				"speedType": int(iSpeed),
+				"growthPct": int(gs.getGrowthPercent()),
+				"researchPct": int(gs.getResearchPercent()),
+				"constructPct": int(gs.getConstructPercent()),
+				"trainPct": int(gs.getTrainPercent()),
+				"finalInit": g.isFinalInitialized(),
+				"simulTurnsOpt": iSimul,
+				"activePlayer": int(iAct),
+				"capFoodYield": int(iFood),
+				"capProdYield": int(iProd),
+				"researchRate": int(iRes),
+				"scenarioStart": bScenarioStart,
+				"scenarioStartTurn": iScenarioStart,
+				"turns5scaled": iTurns5,
+				"syncChecksum": int(iChecksum),
+				"cap0prodName": sProdName,
+				"cap0prodNeeded": int(iProdNeeded),
+				"cap0prodStored": int(iProdStored),
+				"cap0prodPerTurn": int(iProdPerTurn),
+			})
+		except Exception:
+			pass
 	CvTopCivs.CvTopCivs().turnChecker(iGameTurn)
 
 

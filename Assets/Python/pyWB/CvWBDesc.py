@@ -102,6 +102,7 @@ class CvGameDesc:
 		self.maxCityElimination = 0
 		self.numAdvancedStartPoints = 0
 		self.targetScore = 0
+		# Firaxis default; RFC PrivateMaps must set StartYear= in BeginGame (e.g. -3000) or CvGameDesc.apply() can clobber Python scenario init.
 		self.iStartYear = -4000
 		self.szDescription = ""
 		self.szModPath = ""

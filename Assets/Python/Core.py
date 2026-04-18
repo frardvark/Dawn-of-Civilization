@@ -6,7 +6,7 @@ from StoredData import *
 from DataStructures import *
 from Areas import *
 
-from CoreTypes import Civ
+from CoreTypes import Civ, get_null_player
 
 import Popup
 import BugCore
@@ -822,7 +822,7 @@ def player(identifier = None):
 	
 	if isinstance(identifier, Civ):
 		iPlayer = slot(identifier)
-		if iPlayer < 0: return NullPlayer()
+		if iPlayer < 0: return get_null_player()
 		return gc.getPlayer(iPlayer)
 		
 	if isinstance(identifier, int):

@@ -12,7 +12,9 @@ Common trap: the installed Civ4 BTS mod folder under:
 
 - `Sid Meier's Civilization IV Beyond the Sword/Beyond the Sword/Mods/RFC Dawn of Civilization`
 
-…is a *playtest/installed* tree (and in this workspace it may even be **vanilla RFC / an external copy**). Treat it as **read-only reference**. Any edits there are easy to lose and won’t be reflected in the repo.
+…is a *playtest/installed* tree (and in this
+
+ workspace it may even be **vanilla RFC / an external copy**). Treat it as **read-only reference**. Any edits there are easy to lose and won’t be reflected in the repo.
 
 Prefer implementing fixes in this repo, then syncing/building into the playtest folder as needed.
 

@@ -21,26 +21,54 @@ class PlayerList(list):
 		return list.__getitem__(self, index)
 
 
+def _normalize_unit_dict_key(key):
+	"""Canonical dict key is (iOwner, iID). CyUnit and UnitKey (Core) must normalize or evict / __getitem__ break."""
+	if isinstance(key, CyUnit):
+		return key.getOwner(), key.getID()
+	if isinstance(key, (tuple, list)) and len(key) == 2:
+		return int(key[0]), int(key[1])
+	# UnitKey: .owner / .id (not getOwner); avoid importing Core (StoredData loads before / used from Core).
+	if hasattr(key, 'owner') and hasattr(key, 'id'):
+		owner, uid = getattr(key, 'owner'), getattr(key, 'id')
+		if not callable(owner) and not callable(uid):
+			try:
+				return int(owner), int(uid)
+			except (TypeError, ValueError):
+				pass
+	return None
+
+
 class UnitDict(dict):
 
 	def __getitem__(self, item):
-		if isinstance(item, CyUnit):
-			return self.__getitem__((item.getOwner(), item.getID()))
+		nk = _normalize_unit_dict_key(item)
+		if nk is not None:
+			if nk in self:
+				return dict.__getitem__(self, nk)
+			if item in self:
+				return dict.__getitem__(self, item)
+			self[nk] = UnitData()
+			return dict.__getitem__(self, nk)
 		if item not in self:
 			self[item] = UnitData()
 			return self[item]
 		return dict.__getitem__(self, item)
 	
 	def __setitem__(self, key, value):
-		if isinstance(key, CyUnit):
-			dict.__setitem__(self, (key.getOwner(), key.getID()), value)
+		nk = _normalize_unit_dict_key(key)
+		if nk is not None:
+			dict.__setitem__(self, nk, value)
 		else:
 			dict.__setitem__(self, key, value)
 	
 	def evict(self):
-		for iOwner, iID in self.keys():
+		for key in list(self.keys()):
+			parts = _normalize_unit_dict_key(key)
+			if parts is None:
+				continue
+			iOwner, iID = parts
 			if not gc.getPlayer(iOwner).getUnit(iID).isExisting():
-				del self[(iOwner, iID)]
+				del self[key]
 
 
 class CivData:

@@ -3830,6 +3830,24 @@ class TestNullPlayer(TestCase):
 		
 	def test_method_evals_false(self):
 		self.assert_(not self.null_player.isAlive())
+
+	def test_city_unit_iterators_return_empty_tuple_protocol(self):
+		self.assertEqual(self.null_player.firstCity(False), (None, 0))
+		self.assertEqual(self.null_player.nextCity(0, False), (None, 0))
+		self.assertEqual(self.null_player.firstUnit(False), (None, 0))
+		self.assertEqual(self.null_player.nextUnit(0, False), (None, 0))
+
+	def test_cpickle_get_null_player_roundtrip(self):
+		import cPickle as pickle
+		p = get_null_player()
+		q = pickle.loads(pickle.dumps(p))
+		self.assert_(q is p)
+
+	def test_cpickle_arbitrary_null_player_instance_roundtrip(self):
+		import cPickle as pickle
+		p = NullPlayer()
+		q = pickle.loads(pickle.dumps(p))
+		self.assert_(q is get_null_player())
 		
 		
 class TestNullTeam(TestCase):

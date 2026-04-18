@@ -634,7 +634,10 @@ void CvPlayer::reset(PlayerTypes eID, bool bConstructorCall)
 	// Leoreth
 	for (iI = 0; iI < NUM_MODIFIER_TYPES; iI++)
 	{
-		m_aiModifiers[iI] = 0;
+		// Neutral baseline. Many core cost formulas multiply by these modifiers
+		// (and clamp the final result to at least 1). A zero default can therefore
+		// collapse costs to 1 if initialization is skipped (notably in MP scenario start).
+		m_aiModifiers[iI] = 100;
 	}
 
 	for (iI = 0; iI < MAX_PLAYERS; iI++)
